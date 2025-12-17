@@ -1,0 +1,1 @@
+iteration 1000 loss1 is  0.00000, loss2 is  0.00150, loss3 is  0.00191, loss4 is  0.00000, loss5 is  0.00965, loss6 is  0.00837, total loss  0.02143, RI value  1.48187
