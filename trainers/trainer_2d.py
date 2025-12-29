@@ -8,7 +8,7 @@ import torch.nn as nn
 import tqdm
 import utils
 import matplotlib.pyplot as plt
-import devices
+import guides
 
 class Trainer2D:
     def __init__(self, dtype, device, reference_device, memory_type, sampler, optimizer, scheduler, dx=None, dy=None, num_samples=None, n_lower=None, n_upper=None):
@@ -208,7 +208,7 @@ class Trainer2D:
             du_dy = du[:, 1]
             d2u_dy2 = torch.autograd.grad(du_dy.sum(), xy, create_graph=True)[0][:, 1]
 
-            rayleigh = devices.RibWaveguideWithPINNs.get_rayleigh_quotient(d2u_dx2, d2u_dy2, n_squared, u[:, i])
+            rayleigh = guides.RibWaveguideWithPINNs.get_rayleigh_quotient(d2u_dx2, d2u_dy2, n_squared, u[:, i])
             # rayleigh = self.device.underlying_model.eigenvalue
             residual = (torch.mean(torch.abs(d2u_dx2 + d2u_dy2 + (n_squared - rayleigh) * u[:, i])))
             # self.loss_normalizer = residual.item()

@@ -46,11 +46,6 @@ class SlabWaveguide(WaveGuide):
     return self.core_length/2
 
   def evaluate_analytical(self, evaluation_points, num_modes):
-    # if self.study=='TM':
-    #   file_name = f"./Matlab Data/{self.n_substrate}-{self.n_core}-{self.n_cladding}.m"
-    #   mat_file = loadmat(file_name)
-    #   return mat_file['x_out'], mat_file['neffs'], mat_file['Fy']
-    
     w_core = self.core_length / self.k_0
 
     def func(n_eff):

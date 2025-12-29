@@ -6,7 +6,7 @@ from sympy.physics.units.systems.si import base_dims
 os.chdir(r"C:\Users\asmaa\Desktop\Amr\Master's Thesis v0.4")
 sys.path.append(r"C:\Users\asmaa\Desktop\Amr\Master's Thesis v0.4")
 
-import devices
+import guides
 import models
 import samplers
 import trainers
@@ -72,7 +72,7 @@ field_type = 'E'
 # Preparing simulation parameters
 RIs = [n_substrate, n_core, n_cladding]
 lengths = [substrate_length, core_length, cladding_length]
-reference_device = devices.SlabWaveguide(RIs, lambd, lengths, study=study, field_type=field_type)
+reference_device = guides.SlabWaveguide(RIs, lambd, lengths, study=study, field_type=field_type)
 memory_type = torch.device('cpu')
 dtype = torch.float64
 
@@ -100,7 +100,7 @@ for i in range(5):
         dx = (lambd / (i+1) / 10) * k_0
 
         # FD
-        fd_device = devices.SlabWaveguideWithFD(RIs, lambd, lengths, study, field_type, dx)
+        fd_device = guides.SlabWaveguideWithFD(RIs, lambd, lengths, study, field_type, dx)
         _, x, u = fd_device.evaluate(num_modes)
         u = u / np.max(np.abs(u), axis=0, keepdims=True)
         mode_errors_FD = utils.compare_against_analytic(fd_device, x, torch.from_numpy(u), plot=True)
@@ -119,7 +119,7 @@ for i in range(5):
         # # optimzer = torch.optim.Adamax(base_model.parameters(), lr=1e-2)
         # optimizer = SOAP(base_model.parameters(), lr=1e-2, betas = (0.9, 0.99), weight_decay=0, precondition_frequency=10)
         # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1001, 1501], gamma=0.1)
-        # device = devices.SlabWaveguideWithPINNs(RIs, lambd, lengths, study, field_type, base_model, True)
+        # device = guides.SlabWaveguideWithPINNs(RIs, lambd, lengths, study, field_type, base_model, True)
         # train_agent = trainers.Trainer(dtype, device, memory_type, [samplers.uniform_grid], optimizer, scheduler, dx, n_lower=None)
         # loss_history, rayleigh_history, mode_errors_list = train_agent.train(2001, num_modes,
         #                                                                      weights=[1, 1e2, 1e1, 1, 1, 1e-1],
@@ -148,7 +148,7 @@ for i in range(5):
         # optimzer = torch.optim.Adamax(base_model.parameters(), lr=1e-2)
         optimizer = SOAP(base_model.parameters(), lr=1e-2, betas = (0.9, 0.99), weight_decay=0, precondition_frequency=10)
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1001, 1501], gamma=0.1)
-        device = devices.SlabWaveguideWithPINNs(RIs, lambd, lengths, study, field_type, base_model, False)
+        device = guides.SlabWaveguideWithPINNs(RIs, lambd, lengths, study, field_type, base_model, False)
         train_agent = trainers.Trainer(dtype, device, memory_type, [samplers.uniform_grid], optimizer, scheduler, dx, n_lower=2.5)
         loss_history, rayleigh_history, mode_errors_list, _ = train_agent.train(2001, num_modes,
                                                                              weights=[1, 1e2, 1e1, 1, 1, 1e-5],

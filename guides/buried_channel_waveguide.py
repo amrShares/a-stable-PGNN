@@ -74,28 +74,6 @@ class BuriedChannelWaveguide:
 
     return torch.cat((bottom_interface, top_interface)), torch.cat((left_interface, right_interface)), [len(bottom_interface), len(top_interface)], [len(left_interface), len(right_interface)]
 
-  # def get_discontinuities(self, dx, dy, dtype, memory_type):
-  #   total_lengths_x = self.central_region[0] * 2
-  #   x = chebyshev_nodes_first_kind(int(total_lengths_x/dx), dtype=dtype, device=memory_type) * (self.central_region[0])
-  #
-  #   total_lengths_y = self.central_region[1] * 2
-  #   y = chebyshev_nodes_first_kind(int(total_lengths_y/dy), dtype=dtype, device=memory_type) * (self.central_region[1])
-  #
-  #   left_points = y[torch.abs(y) < (self.lengths_y[1] / 2 - dy / 2)].reshape(-1, 1)
-  #   left_interface = torch.cat((torch.full_like(left_points, -self.lengths_x[1] / 2), left_points), dim=-1)
-  #
-  #   right_points = y[torch.abs(y) < (self.lengths_y[1] / 2 - dy / 2)].reshape(-1, 1)
-  #   right_interface = torch.cat((torch.full_like(right_points, self.lengths_x[1] / 2), right_points), dim=-1)
-  #
-  #   bottom_points = x[torch.abs(x) < (self.lengths_x[1] / 2 - dx / 2)].reshape(-1, 1)
-  #   bottom_interface = torch.cat((bottom_points, torch.full_like(bottom_points, -self.lengths_y[1] / 2)), dim=-1)
-  #
-  #   top_points = x[torch.abs(x) < (self.lengths_x[1] / 2 - dx / 2)].reshape(-1, 1)
-  #   top_interface = torch.cat((top_points, torch.full_like(top_points, self.lengths_y[1] / 2)), dim=-1)
-  #
-  #   return torch.cat((bottom_interface, top_interface)), torch.cat((left_interface, right_interface)), [
-  #     len(bottom_interface), len(top_interface)], [len(left_interface), len(right_interface)]
-
   def get_boundaries(self, dx, dy, dtype,  memory_type):
     X = torch.arange(0, self.total_length_x/2, dx, dtype=dtype, device=memory_type).reshape(-1, 1)
     X = torch.cat((torch.flip(-X, dims=(0,))[:-1], X))
@@ -158,29 +136,10 @@ class BuriedChannelWaveguide:
     cb.ax.tick_params(length=0)
 
   def make_features(self, xy):
-    # xy = xy.detach().clone()
-    # return torch.square(self.refractive_index(xy, format='torch'))
-    #
     output = torch.zeros_like(xy[:, [0]])
     core_mask = (abs(xy[:, 0]) <= self.lengths_x[1]/2) & (abs(xy[:, 1]) <= self.lengths_y[1]/2)
-    # upper_lower_mask = abs(xy[:, 1]) > self.lengths_y[1]/2
     output[core_mask] = 1/self.n_core**2
     output[~core_mask] = 1/self.n_substrate**2
-    # output[upper_lower_mask] = (self.n_core/2 + self.n_substrate/2)**2
-
-    # x0 = self.lengths_x[1]/2
-    # y0 = self.lengths_y[1]/2
-    #
-    # output = torch.zeros_like(xy[:, [0]])
-    #
-    # ymask = torch.abs(xy[:, 1])>=y0
-    # eps = 1e-5
-    # xy_inmask = xy[ymask]
-    # xy_outmask = xy[~ymask]
-    #
-    # output[ymask] = (torch.abs(xy_inmask[:, [0]])-x0)/(eps + torch.sqrt((torch.abs(xy_inmask[:, [0]])-x0)**2 + (torch.abs(xy_inmask[:, [1]])-y0)**2))
-    # output[~ymask] = (torch.abs(xy_outmask[:, [0]])-x0)/(eps + torch.sqrt((torch.abs(xy_outmask[:, [0]])-x0)**2))
-    #
     return output
 
   @property

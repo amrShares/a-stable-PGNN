@@ -4,15 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-def compare_against_analytic(device, x, u, plot=False, verbose=False):
+def compare_against_analytic(guide, x, u, plot=False, verbose=False):
     mode_errors = []
     num_samples, num_modes = len(u), len(u.T)
 
-    evaluation_points, eigen_modes_analytic, eigen_funcs_analytic = device.evaluate_analytical(x, num_modes)
+    evaluation_points, eigen_modes_analytic, eigen_funcs_analytic = guide.evaluate_analytical(x, num_modes)
     
-    if device.study == 'TM' and device.field_type=='E':
+    if guide.study == 'TM' and guide.field_type=='E':
       print('adjusting analytic solution for Ex in a TM study')
-      eigen_funcs_analytic = eigen_funcs_analytic / device.refractive_index(evaluation_points.reshape(-1), format='numpy')**2
+      eigen_funcs_analytic = eigen_funcs_analytic / guide.refractive_index(evaluation_points.reshape(-1), format='numpy')**2
     
     eigen_funcs_analytic /= np.max(np.abs(eigen_funcs_analytic), axis=-1, keepdims=True)
     eigen_funcs_analytic = eigen_funcs_analytic.reshape(num_modes, num_samples)
@@ -40,9 +40,39 @@ def compare_against_analytic(device, x, u, plot=False, verbose=False):
     prediction_normed = u.detach().cpu() / torch.max(torch.abs(u).cpu(), dim=0, keepdim=True)[0]
     if plot:
         for i in range(num_modes):
-            plt.plot(eigen_funcs_analytic[i], label='analytic')
-            plt.plot(prediction_normed[:, i], linestyle='--', label='prediction')
-            plt.legend()
+            plt.figure(figsize=(6, 4))
+
+            # Prediction: solid black, thick
+            plt.plot(
+                prediction_normed[:, i],
+                color='black',
+                linestyle='-',
+                linewidth=2.5,
+                label='Prediction'
+            )
+
+            # Analytic: dashed red, thick
+            plt.plot(
+                eigen_funcs_analytic[i],
+                color='red',
+                linestyle='--',
+                linewidth=2.5,
+                label='Analytic'
+            )
+
+            # Axes styling
+            ax = plt.gca()
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_linewidth(1.5)
+            ax.spines['bottom'].set_linewidth(1.5)
+            ax.tick_params(axis='both', which='major', labelsize=12, width=1.5)
+
+            plt.xlabel('Spatial index', fontsize=13)
+            plt.ylabel('Field amplitude', fontsize=13)
+            plt.legend(frameon=False, fontsize=12)
+
+            plt.tight_layout()
             plt.show()
     return mode_errors
 
