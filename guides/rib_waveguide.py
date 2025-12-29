@@ -65,14 +65,14 @@ class RibWaveguide:
 
   def plot(self, dx, dy):
     dtype = torch.float32
-    memory_type = torch.device('cpu')
+    device = torch.device('cpu')
 
-    xu = torch.arange(0, self.simulation_lengths_x[0], dx, dtype=dtype, device=memory_type)
-    xl = torch.arange(0, self.simulation_lengths_x[1], dx, dtype=dtype, device=memory_type)
+    xu = torch.arange(0, self.simulation_lengths_x[0], dx, dtype=dtype, device=device)
+    xl = torch.arange(0, self.simulation_lengths_x[1], dx, dtype=dtype, device=device)
     x = torch.cat((torch.flip(-xl, dims=(0,))[:-1], xu))
 
-    yu = torch.arange(0, self.simulation_lengths_y[0], dy, dtype=dtype, device=memory_type)
-    yl = torch.arange(0, self.simulation_lengths_y[1], dy, dtype=dtype, device=memory_type)
+    yu = torch.arange(0, self.simulation_lengths_y[0], dy, dtype=dtype, device=device)
+    yl = torch.arange(0, self.simulation_lengths_y[1], dy, dtype=dtype, device=device)
     y = torch.cat((torch.flip(-yl, dims=(0,))[:-1], yu))
 
     X, Y = torch.meshgrid(x, y)
@@ -94,28 +94,21 @@ class RibWaveguide:
     
     out = out.reshape(X.shape)
 
-    boudndary_pts, boundary_vals = self.get_boundaries(xy, dx, dy, torch.float32,  torch.device('cpu'))
-    discontinuities = self.get_discontinuities(xy, dx, dy)
-
     plt.figure(figsize=(10, 8))
     from_list = matplotlib.colors.LinearSegmentedColormap.from_list
     cm = from_list(None, [(1, 0, 0), (0, 1, 0), (0, 0, 1)], 3)
     plt.contourf(X, Y, out, cmap=cm);
-
-    # len_rib = self.lengths_y[1]
-    # plt.axhline(y=-len_rib, color='black')
-
     plt.clim(-1.5, 1.5)
     cb = plt.colorbar(ticks=[-1, 0, 1])
     cb.ax.tick_params(length=0)
 
-  def get_discontinuities(self, dx, dy, dtype, memory_type):
-    xu = torch.arange(0, self.simulation_lengths_x[0], dx/2, dtype=dtype, device=memory_type).reshape(-1, 1)
-    xl = torch.arange(0, self.simulation_lengths_x[1], dx/2, dtype=dtype, device=memory_type).reshape(-1, 1)
+  def get_discontinuities(self, dx, dy, dtype, device='cpu'):
+    xu = torch.arange(0, self.simulation_lengths_x[0], dx/2, dtype=dtype, device=device).reshape(-1, 1)
+    xl = torch.arange(0, self.simulation_lengths_x[1], dx/2, dtype=dtype, device=device).reshape(-1, 1)
     x = torch.cat((torch.flip(-xl, dims=(0,))[:-1], xu))
 
-    yu = torch.arange(dy/2, self.simulation_lengths_y[0], dy/2, dtype=dtype, device=memory_type).reshape(-1, 1)
-    yl = torch.arange(dy/2, self.simulation_lengths_y[1], dy/2, dtype=dtype, device=memory_type).reshape(-1, 1)
+    yu = torch.arange(dy/2, self.simulation_lengths_y[0], dy/2, dtype=dtype, device=device).reshape(-1, 1)
+    yl = torch.arange(dy/2, self.simulation_lengths_y[1], dy/2, dtype=dtype, device=device).reshape(-1, 1)
     y = torch.cat((torch.flip(-yl, dims=(0,)), yu))
 
     left_points = yu[(yu<self.lengths_y[2])&(yu>0)].reshape(-1, 1)
@@ -135,27 +128,29 @@ class RibWaveguide:
     
     return torch.cat((bottom_interface, center_interface, top_interface)), torch.cat((left_interface, right_interface)), [len(bottom_interface), len(center_interface), len(top_interface)], [len(left_interface), len(right_interface)]
 
-  def get_boundaries(self, xy, dx, dy, dtype,  memory_type):
-    end_val_x = ((self.total_length_x/2)//dx)*dx
-    end_val_yu = ((self.upward_length)//dy)*dy
-    end_val_yb = ((self.downward_length)//dy)*dy
-    
-    mask_left = xy[:, 0] <= -end_val_x + dx/2
-    mask_right = xy[:, 0] >= end_val_x - dx/2
-    
-    mask_bottom = xy[:, 1] <= -end_val_yb + dy/2
-    mask_bottom = mask_bottom & (~mask_right) & (~mask_left)
+  def get_boundaries(self, dx, dy, dtype,  device):
+    xu = torch.arange(0, self.simulation_lengths_x[0], dx, dtype=dtype, device=device)
+    xl = torch.arange(0, self.simulation_lengths_x[1], dx, dtype=dtype, device=device)
+    X = torch.cat((torch.flip(-xl, dims=(0,))[:-1], xu)).reshape(-1, 1)
 
-    mask_top = xy[:, 1] >= end_val_yu - dy/2
-    mask_top = mask_top & (~mask_right) & (~mask_left)
+    yu = torch.arange(0, self.simulation_lengths_y[0], dy, dtype=dtype, device=device)
+    yl = torch.arange(0, self.simulation_lengths_y[1], dy, dtype=dtype, device=device)
+    Y = torch.cat((torch.flip(-yl, dims=(0,))[:-1], yu)).reshape(-1, 1)
 
-    left_bd = xy[mask_left]
-    right_bd = xy[mask_right]
-    bottom_bd = xy[mask_bottom]
-    top_bd = xy[mask_top]
+    bd_1 = torch.cat((torch.empty_like(Y).fill_(X[0, 0]), Y), dim=1)
+    y_bd1 = torch.zeros_like(Y)
 
-    bd = torch.cat((left_bd, right_bd, bottom_bd, top_bd), dim=0)
-    u_bd = torch.zeros_like(bd[:, [0]])
+    bd_2 = torch.cat((torch.empty_like(Y).fill_(X[-1, 0]), Y), dim=1)
+    y_bd2 = torch.zeros_like(Y)
+
+    bd_3 = torch.cat((X, torch.empty_like(X).fill_(Y[0, 0])), dim=1)
+    y_bd3 = torch.zeros_like(X)
+
+    bd_4 = torch.cat((X, torch.empty_like(X).fill_(Y[-1, 0])), dim=1)
+    y_bd4 = torch.zeros_like(X)
+
+    bd = torch.cat((bd_1, bd_2, bd_3, bd_4), dim=0)
+    u_bd = torch.cat((y_bd1, y_bd2, y_bd3, y_bd4), dim=0)
     return bd, u_bd
 
   @property

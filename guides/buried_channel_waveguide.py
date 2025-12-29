@@ -51,13 +51,13 @@ class BuriedChannelWaveguide:
 
     return out
 
-  def get_discontinuities(self, dx, dy, dtype, memory_type):
-    xu = torch.arange(0, self.simulation_lengths_x[0] - dx/2,  dx, dtype=dtype, device=memory_type).reshape(-1, 1)
-    xl = torch.arange(0, self.simulation_lengths_x[1] - dx/2,  dx, dtype=dtype, device=memory_type).reshape(-1, 1)
+  def get_discontinuities(self, dx, dy, dtype, device):
+    xu = torch.arange(0, self.simulation_lengths_x[0] - dx/2,  dx, dtype=dtype, device=device).reshape(-1, 1)
+    xl = torch.arange(0, self.simulation_lengths_x[1] - dx/2,  dx, dtype=dtype, device=device).reshape(-1, 1)
     x = torch.cat((torch.flip(-xl, dims=(0,))[:-1], xu))
 
-    yu = torch.arange(0, self.simulation_lengths_y[0] - dy/2,  dy, dtype=dtype, device=memory_type).reshape(-1, 1)
-    yl = torch.arange(0, self.simulation_lengths_y[1] - dy/2,  dy, dtype=dtype, device=memory_type).reshape(-1, 1)
+    yu = torch.arange(0, self.simulation_lengths_y[0] - dy/2,  dy, dtype=dtype, device=device).reshape(-1, 1)
+    yl = torch.arange(0, self.simulation_lengths_y[1] - dy/2,  dy, dtype=dtype, device=device).reshape(-1, 1)
     y = torch.cat((torch.flip(-yl, dims=(0,))[:-1], yu))
 
     left_points = y[torch.abs(y)<(self.lengths_y[1]/2-dy/2)].reshape(-1, 1)
@@ -74,11 +74,11 @@ class BuriedChannelWaveguide:
 
     return torch.cat((bottom_interface, top_interface)), torch.cat((left_interface, right_interface)), [len(bottom_interface), len(top_interface)], [len(left_interface), len(right_interface)]
 
-  def get_boundaries(self, dx, dy, dtype,  memory_type):
-    X = torch.arange(0, self.total_length_x/2, dx, dtype=dtype, device=memory_type).reshape(-1, 1)
+  def get_boundaries(self, dx, dy, dtype,  device):
+    X = torch.arange(0, self.total_length_x/2, dx, dtype=dtype, device=device).reshape(-1, 1)
     X = torch.cat((torch.flip(-X, dims=(0,))[:-1], X))
 
-    Y = torch.arange(0, self.total_length_y/2, dy, dtype=dtype, device=memory_type).reshape(-1, 1)
+    Y = torch.arange(0, self.total_length_y/2, dy, dtype=dtype, device=device).reshape(-1, 1)
     Y = torch.cat((torch.flip(-Y, dims=(0,))[:-1], Y))
 
     bd_1 = torch.cat((torch.empty_like(Y).fill_(X[0, 0]), Y), dim=1)
@@ -99,14 +99,14 @@ class BuriedChannelWaveguide:
 
   def plot(self, dx, dy):
     dtype = torch.float32
-    memory_type = torch.device('cpu')
+    device = torch.device('cpu')
 
-    xu = torch.arange(0, self.simulation_lengths_x[0], dx, dtype=dtype, device=memory_type)
-    xl = torch.arange(0, self.simulation_lengths_x[1], dx, dtype=dtype, device=memory_type)
+    xu = torch.arange(0, self.simulation_lengths_x[0], dx, dtype=dtype, device=device)
+    xl = torch.arange(0, self.simulation_lengths_x[1], dx, dtype=dtype, device=device)
     x = torch.cat((torch.flip(-xl, dims=(0,))[:-1], xu))
 
-    yu = torch.arange(0, self.simulation_lengths_y[0], dy, dtype=dtype, device=memory_type)
-    yl = torch.arange(0, self.simulation_lengths_y[1], dy, dtype=dtype, device=memory_type)
+    yu = torch.arange(0, self.simulation_lengths_y[0], dy, dtype=dtype, device=device)
+    yl = torch.arange(0, self.simulation_lengths_y[1], dy, dtype=dtype, device=device)
     y = torch.cat((torch.flip(-yl, dims=(0,))[:-1], yu))
 
     X, Y = torch.meshgrid(x, y)
@@ -124,7 +124,7 @@ class BuriedChannelWaveguide:
     out = out.reshape(X.shape)
 
     boudndary_pts, boundary_vals = self.get_boundaries(dx, dy, torch.float32,  torch.device('cpu'))
-    discontinuities = self.get_discontinuities(dx, dy, dtype, memory_type)
+    discontinuities = self.get_discontinuities(dx, dy, dtype, device)
 
     plt.figure(figsize=(10, 8))
     from_list = matplotlib.colors.LinearSegmentedColormap.from_list
